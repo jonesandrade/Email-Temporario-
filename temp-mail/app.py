@@ -6,7 +6,7 @@ from flask import Flask, render_template, jsonify, request
 
 app = Flask(__name__)
 
-# Configuração do banco de dados para funcionar no Render
+# Define o caminho do banco de dados na pasta do projeto
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "inbox.db")
 
@@ -48,9 +48,7 @@ def mensagens(email):
 
 @app.route("/enviar", methods=["POST"])
 def enviar():
-    # Aceita JSON (do seu botão simular) ou Form (do CloudMailin)
     dados = request.json if request.is_json else request.form
-    
     email = dados.get("email") or dados.get("to")
     sender = dados.get("sender") or dados.get("from")
     subject = dados.get("subject", "Sem Assunto")
