@@ -6,7 +6,7 @@ from flask import Flask, render_template, jsonify, request
 
 app = Flask(__name__)
 
-# Define o caminho do banco de dados na pasta do projeto
+# Garante que o banco seja criado no diretório correto do servidor
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "inbox.db")
 
@@ -65,5 +65,6 @@ def enviar():
     return jsonify({"error": "Dados incompletos"}), 400
 
 if __name__ == "__main__":
+    # O Render usa a variável de ambiente PORT
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
