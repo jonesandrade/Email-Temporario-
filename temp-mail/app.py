@@ -6,11 +6,12 @@ from flask import Flask, render_template, jsonify, request
 
 app = Flask(__name__)
 
-# Garante que o banco seja criado no diretório correto do servidor
+# Configuração do banco de dados (Caminho absoluto para o Render)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "inbox.db")
 
 def init_db():
+    """Cria a tabela se ela não existir."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("""
@@ -25,6 +26,7 @@ def init_db():
     conn.commit()
     conn.close()
 
+# Inicializa o banco de dados
 init_db()
 
 @app.route("/")
@@ -33,12 +35,14 @@ def index():
 
 @app.route("/gerar")
 def gerar():
+    """Gera um endereço de e-mail aleatório."""
     user = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
     email = f"{user}@temp.local"
     return jsonify({"email": email})
 
 @app.route("/mensagens/<email>")
 def mensagens(email):
+    """Lista as mensagens recebidas para um e-mail específico."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT sender, subject, message FROM inbox WHERE email=? ORDER BY id DESC", (email,))
@@ -48,11 +52,18 @@ def mensagens(email):
 
 @app.route("/enviar", methods=["POST"])
 def enviar():
-    dados = request.json if request.is_json else request.form
+    """Rota que recebe os e-mails (aceita JSON e Form Data)."""
+    # Verifica se os dados vieram como JSON ou Form (essencial para Webhooks)
+    if request.is_json:
+        dados = request.json
+    else:
+        dados = request.form
+    
+    # Mapeia diferentes nomes de campos (to/email, from/sender, etc)
     email = dados.get("email") or dados.get("to")
     sender = dados.get("sender") or dados.get("from")
     subject = dados.get("subject", "Sem Assunto")
-    message = dados.get("message") or dados.get("plain")
+    message = dados.get("message") or dados.get("plain") or dados.get("text")
 
     if email and message:
         conn = sqlite3.connect(DB_PATH)
@@ -62,9 +73,10 @@ def enviar():
         conn.commit()
         conn.close()
         return jsonify({"ok": True}), 200
+    
     return jsonify({"error": "Dados incompletos"}), 400
 
 if __name__ == "__main__":
-    # O Render usa a variável de ambiente PORT
+    # O Render define a porta automaticamente na variável de ambiente PORT
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
